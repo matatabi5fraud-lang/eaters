@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>友メシ — 友達のおすすめレストランメモ</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -214,17 +214,10 @@
     box-shadow: 0 4px 20px rgba(0,0,0,.08); width: 100%; max-width: 320px; text-align: center;
   }
 </style>
-
-<script>
-  window.onerror = function(message, source, lineno) {
-    alert('【プログラムエラー発生！】\n' + message + '\n\nそのまましばらく待つか、リロードしてください。');
-  };
-</script>
-
 </head>
 <body>
 
-<div style="position: fixed; top: 4px; left: 4px; font-size: 12px; font-weight: bold; color: #888; z-index: 10000; background: rgba(255,255,255,0.7); padding: 2px 6px; border-radius: 4px;">v5</div>
+<div style="position: fixed; top: 4px; left: 4px; font-size: 12px; font-weight: bold; color: #fff; z-index: 10000; background: #E06C75; padding: 2px 6px; border-radius: 4px; pointer-events: none;">v6</div>
 
 <div id="lock-screen">
   <div class="lock-card">
@@ -234,6 +227,7 @@
     <input type="password" id="lock-pass" class="form-input" style="text-align:center; margin-bottom:16px;" placeholder="合言葉" onkeypress="if(event.key === 'Enter') handleUnlock()">
     <button type="button" id="lock-btn" class="btn btn-primary btn-full" onclick="handleUnlock()">解除する</button>
     <div id="lock-err" style="color:var(--red); font-size:12px; margin-top:12px; display:none; font-weight:700;">合言葉が違います！</div>
+    <div id="db-status" style="font-size:11px; margin-top:16px; color:#888;">☁️ 通信確認中...</div>
   </div>
 </div>
 
@@ -244,26 +238,47 @@
 // ── ★合言葉の設定 ──
 const SECRET_WORD = 'ma';
 
-// ── ロック解除の処理（一番最初に書くことで絶対に動くようにする） ──
+// ── SUPABASE INITIALIZATION ──
+const SUPABASE_URL = 'https://qvrkarxkwqjfopbwgavs.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2cmthcnhrd3FqZm9wYndnYXZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzMzODQsImV4cCI6MjA5NzAwOTM4NH0.wkTLeiCJMkQJ8t87osAZwxUUkgZBeTOgudb5WD4Kmg4';
+
+let supabase = null;
+try {
+  if (typeof window.supabase !== 'undefined') {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+} catch (e) { console.error('Supabase Setup Error:', e); }
+
+// ステータス表示の更新
+window.onload = function() {
+  const dbStatus = document.getElementById('db-status');
+  if (dbStatus) {
+    if (supabase) {
+      dbStatus.textContent = '✅ 通信準備OK';
+      dbStatus.style.color = '#5DBB63';
+    } else {
+      dbStatus.textContent = '⚠️ スマホの広告ブロック等で通信が制限されています';
+      dbStatus.style.color = 'var(--red)';
+    }
+  }
+};
+
+// ── ロック解除の処理 ──
 window.handleUnlock = function() {
   const input = document.getElementById('lock-pass');
   const err = document.getElementById('lock-err');
   const lock = document.getElementById('lock-screen');
   
   if (!input) return;
-  err.style.display = 'none'; // エラーを一旦消す
+  err.style.display = 'none';
   
-  // trim() で勝手に入る空白を無視する
+  // スマホの予測変換等で入る空白を無視するために trim() を使用
   if (input.value.trim() === SECRET_WORD) {
     try { sessionStorage.setItem('tomomeshi-unlocked', 'true'); } catch(e) {}
     lock.style.display = 'none'; // ロック画面を消す
-    
-    // データ読み込み関数が存在すれば呼ぶ
-    if (typeof loadMemos === 'function') {
-      loadMemos();
-    }
+    if (typeof loadMemos === 'function') loadMemos();
   } else {
-    err.style.display = 'block'; // エラーを出す
+    err.style.display = 'block';
     input.value = '';
   }
 };
@@ -274,20 +289,6 @@ try {
     document.getElementById('lock-screen').style.display = 'none';
   }
 } catch(e) {}
-
-
-// ── SUPABASE INITIALIZATION ──
-const SUPABASE_URL = 'https://qvrkarxkwqjfopbwgavs.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2cmthcnhrd3FqZm9wYndnYXZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzMzODQsImV4cCI6MjA5NzAwOTM4NH0.wkTLeiCJMkQJ8t87osAZwxUUkgZBeTOgudb5WD4Kmg4';
-
-let supabase = null;
-try {
-  if (window.supabase) {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  }
-} catch (e) {
-  console.error('Supabase error:', e);
-}
 
 const FRIEND_COLORS = ['#F6C90E','#5DBB63','#17A2B8','#E06C75','#9B59B6','#F07A30'];
 const CATEGORIES = ['🍜 ラーメン・麺類','🍣 寿司・魚','🍖 肉料理','🍕 洋食','🍱 和食','☕ カフェ・スイーツ','🌏 エスニック','🍺 居酒屋','その他'];
@@ -303,23 +304,31 @@ let sugTimer = null;
 
 // ── SUPABASE DATABASE ACTIONS ──
 window.loadMemos = async function() {
-  if (!supabase) return;
+  if (!supabase) {
+    state.isLoadingData = false;
+    render();
+    toast('データベースに接続できませんでした');
+    return;
+  }
   state.isLoadingData = true;
   render();
-  const { data, error } = await supabase.from('memos').select('*').order('id', { ascending: false });
-  
-  if (error) {
+  try {
+    const { data, error } = await supabase.from('memos').select('*').order('id', { ascending: false });
+    if (error) throw error;
+    if (data) {
+      state.memos = data;
+      state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
+    }
+  } catch(err) {
+    console.error(err);
     toast('データの読み込みに失敗しました');
-  } else if (data) {
-    state.memos = data;
-    state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
   }
   state.isLoadingData = false;
   render();
 };
 
 async function addMemo() {
-  if (!supabase) { alert('データベースに接続されていません'); return; }
+  if (!supabase) { toast('通信制限のため保存できません'); return; }
   
   const friend = state.form.friendNew.trim() || state.form.friend;
   if (!state.form.name.trim() || !friend) return;
@@ -334,10 +343,7 @@ async function addMemo() {
   toast('保存中...');
   const { data, error } = await supabase.from('memos').insert([memo]).select();
   
-  if (error) {
-    toast('保存に失敗しました');
-    return;
-  }
+  if (error) { toast('保存に失敗しました'); return; }
   if (data && data.length > 0) {
     state.memos = [data[0], ...state.memos];
     state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
@@ -368,9 +374,7 @@ async function deleteMemo(id) {
   if (!confirm('このメモを削除しますか？')) return;
   toast('削除中...');
   const { error } = await supabase.from('memos').delete().eq('id', id);
-  if (error) {
-    toast('削除に失敗しました'); return;
-  }
+  if (error) { toast('削除に失敗しました'); return; }
   state.memos = state.memos.filter(m => m.id !== id);
   state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
   state.view = 'list';
