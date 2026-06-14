@@ -218,6 +218,8 @@
 </head>
 <body>
 
+<div style="position: fixed; top: 4px; left: 4px; font-size: 12px; font-weight: bold; color: #fff; z-index: 20000; background: #E06C75; padding: 2px 6px; border-radius: 4px; pointer-events: none;">v9</div>
+
 <div id="lock-screen">
   <div class="lock-card">
     <div style="font-size:32px; margin-bottom:10px;">🔒</div>
@@ -251,7 +253,7 @@ const FRIEND_COLORS = ['#F6C90E','#5DBB63','#17A2B8','#E06C75','#9B59B6','#F07A3
 const CATEGORIES = ['🍜 ラーメン・麺類','🍣 寿司・魚','🍖 肉料理','🍕 洋食','🍱 和食','☕ カフェ・スイーツ','🌏 エスニック','🍺 居酒屋','その他'];
 
 let state = {
-  view: 'list', memos: [], friends: [], filter: { friend: '', visited: 'all', search: '', sort: 'new' },
+  view: 'list', memos: [], friends: [], filter: { friend: '', visited: 'all', search: '', sort: 'new' }, // ← sortを追加
   selected: null, form: { name:'', friend:'', friendNew:'', category:'その他', menu:'', note:'', address:'', lat:null, lng:null, visited:false },
   suggestions: [], showSug: false, apiStatus: '', apiError: '', userLL: null,
   nearby: [], nearbyLoading: false, nearbyError: '', isLoadingData: true
@@ -260,8 +262,8 @@ let sugTimer = null;
 
 // ── 距離計算ロジック（直線距離） ──
 function getDistance(lat1, lon1, lat2, lon2) {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
-  const R = 6371e3;
+  if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity; // 座標がない場合は無限大
+  const R = 6371e3; // 地球の半径(m)
   const p1 = lat1 * Math.PI/180;
   const p2 = lat2 * Math.PI/180;
   const dp = (lat2-lat1) * Math.PI/180;
@@ -460,11 +462,7 @@ async function handleNameInput(val) {
 function pickSuggestion(s) {
   state.form = { ...state.form, name: s.name, address: s.address, lat: s.lat, lng: s.lng };
   state.suggestions = []; state.showSug = false; state.apiStatus = '';
-  if (_addFormEl) { 
-    _addFormEl._refs.nameInput.value = s.name; 
-    _addFormEl._refs.addrInput.value = s.address || '';
-    patchAddForm(); 
-  } else render();
+  if (_addFormEl) { _addFormEl._refs.nameInput.value = s.name; patchAddForm(); } else render();
 }
 
 async function loadNearby() {
@@ -540,7 +538,7 @@ function renderMap() {
     // 地図の初期化（一旦東京を中心にする）
     const map = L.map('map-container').setView([35.681236, 139.767125], 10);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
     const bounds = [];
@@ -578,7 +576,7 @@ function renderList() {
     h('div', {}, h('div', {cls:'header-title'}, '🍽 友メシ'), h('div', {cls:'header-sub'}, `まだ行ってない：${noyet}件`)), 
     h('div', {cls:'header-actions'}, 
       h('button', {cls:'btn btn-gray btn-sm', onClick: exportCSV}, '📄 CSV'), 
-      h('button', {cls:'btn btn-teal btn-sm', onClick: () => { setState({view:'map'}); }}, '🗺 マップ'),
+      h('button', {cls:'btn btn-teal btn-sm', onClick: () => { setState({view:'map'}); }}, '🗺 マップ'), // ★マップボタン
       h('button', {cls:'btn btn-primary btn-sm', onClick: () => { setState({view:'add'}); }}, '＋ 追加')
     )
   );
@@ -643,16 +641,15 @@ function buildAddForm() {
   const sugWrap = document.createElement('div'); sugWrap.className = 'sug-wrap'; const nameInput = document.createElement('input'); nameInput.className = 'form-input'; nameInput.placeholder = '2文字以上入力すると候補が出ます'; nameInput.autocomplete = 'off'; nameInput.value = state.form.name; nameInput.addEventListener('input', e => handleNameInput(e.target.value)); nameInput.addEventListener('focus', () => { if (state.suggestions.length > 0) patchAddForm(); }); nameInput.addEventListener('blur', () => setTimeout(() => { state.showSug = false; patchAddForm(); }, 200)); sugWrap.append(nameInput); const sugBox = document.createElement('div'); sugWrap.append(sugBox); body.append(sugWrap);
   const statusEl = document.createElement('div'); body.append(statusEl); 
   
-  // ★手動入力用の住所フィールド
   body.append(lbl('住所'));
-  const addrInput = document.createElement('input'); addrInput.className = 'form-input'; addrInput.placeholder = '住所（自動入力、または手動で入力）'; addrInput.value = state.form.address; addrInput.addEventListener('input', e => { state.form.address = e.target.value; }); body.append(addrInput);
+  const addrInput = document.createElement('input'); addrInput.className = 'form-input'; addrInput.placeholder = '住所（自動入力、または手動で入力）'; addrInput.value = state.form.address; addrInput.addEventListener('input', e => { state.form = {...state.form, address: e.target.value}; }); body.append(addrInput);
   
   body.append(lbl('教えてくれた友達 *')); const chipRow = document.createElement('div'); chipRow.className = 'chip-row'; body.append(chipRow); const friendInput = document.createElement('input'); friendInput.className = 'form-input'; friendInput.placeholder = '新しい友達の名前を入力'; friendInput.value = state.form.friendNew; friendInput.addEventListener('input', e => { state.form = {...state.form, friendNew: e.target.value, friend:''}; patchAddForm(); }); body.append(friendInput);
   body.append(lbl('カテゴリ')); const catSel = document.createElement('select'); catSel.className = 'form-input'; CATEGORIES.forEach(c => { const o = document.createElement('option'); o.value = o.textContent = c; catSel.append(o); }); catSel.value = state.form.category; catSel.addEventListener('change', e => { state.form = {...state.form, category: e.target.value}; }); body.append(catSel);
   body.append(lbl('おすすめメニュー')); const menuInput = document.createElement('input'); menuInput.className = 'form-input'; menuInput.placeholder = '例：担々麺、チャーハン'; menuInput.value = state.form.menu; menuInput.addEventListener('input', e => { state.form = {...state.form, menu: e.target.value}; }); body.append(menuInput);
   body.append(lbl('メモ・コメント')); const noteTA = document.createElement('textarea'); noteTA.className = 'form-textarea'; noteTA.placeholder = '例：辛さ調節できる、夜は混む'; noteTA.value = state.form.note; noteTA.addEventListener('input', e => { state.form = {...state.form, note: e.target.value}; }); body.append(noteTA);
   const visitedLabel = document.createElement('label'); visitedLabel.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;color:#555;cursor:pointer'; const visitedCb = document.createElement('input'); visitedCb.type = 'checkbox'; visitedCb.checked = state.form.visited; visitedCb.addEventListener('change', e => { state.form = {...state.form, visited: e.target.checked}; }); visitedLabel.append(visitedCb, 'もう行った'); body.append(visitedLabel);
-  const saveBtn = document.createElement('button'); saveBtn.className = 'btn btn-primary btn-full'; saveBtn.style.marginTop = '20px'; saveBtn.textContent = '💾 保存する'; saveBtn.addEventListener('click', () => { state.form.name = nameInput.value.trim() || state.form.name; state.form.menu = menuInput.value; state.form.note = noteTA.value; state.form.friendNew = friendInput.value; state.form.category = catSel.value; state.form.visited = visitedCb.checked; state.form.address = addrInput.value.trim(); addMemo(); }); body.append(saveBtn);
+  const saveBtn = document.createElement('button'); saveBtn.className = 'btn btn-primary btn-full'; saveBtn.style.marginTop = '20px'; saveBtn.textContent = '💾 保存する'; saveBtn.addEventListener('click', () => { state.form.name = nameInput.value.trim() || state.form.name; state.form.menu = menuInput.value; state.form.note = noteTA.value; state.form.friendNew = friendInput.value; state.form.category = catSel.value; state.form.visited = visitedCb.checked; addMemo(); }); body.append(saveBtn);
   wrap._refs = { nameInput, sugBox, statusEl, addrInput, chipRow, friendInput, catSel, menuInput, noteTA, visitedCb, saveBtn }; return wrap;
 }
 
