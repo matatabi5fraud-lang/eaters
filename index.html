@@ -223,7 +223,7 @@
     <h2 style="font-size:18px; font-weight:700; margin-bottom:8px;">合言葉を入力</h2>
     <p style="font-size:12px; color:var(--muted); margin-bottom:20px; line-height:1.5;">友達専用のメモ帳です。<br>合言葉を入れてロックを解除してください。</p>
     <input type="password" id="lock-pass" class="form-input" style="text-align:center; margin-bottom:16px;" placeholder="合言葉">
-    <button id="lock-btn" class="btn btn-primary btn-full">解除する</button>
+    <button type="button" id="lock-btn" class="btn btn-primary btn-full">解除する</button>
     <div id="lock-err" style="color:var(--red); font-size:12px; margin-top:12px; display:none; font-weight:700;">合言葉が違います！</div>
   </div>
 </div>
@@ -232,13 +232,23 @@
 <div id="toast"></div>
 
 <script>
-// ── ★合言葉の設定（好きな言葉に変えてください！） ──
+// ── ★合言葉の設定（両端の「'」は絶対に消さないでください！） ──
 const SECRET_WORD = 'ma';
 
 // ── SUPABASE INITIALIZATION ──
 const SUPABASE_URL = 'https://qvrkarxkwqjfopbwgavs.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2cmthcnhrd3FqZm9wYndnYXZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzMzODQsImV4cCI6MjA5NzAwOTM4NH0.wkTLeiCJMkQJ8t87osAZwxUUkgZBeTOgudb5WD4Kmg4';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let supabase;
+try {
+  if (typeof window.supabase === 'undefined') {
+    throw new Error('Supabaseが読み込めていません。通信環境を確認してください。');
+  }
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch (e) {
+  console.error(e);
+  alert('データベースの準備に失敗しました。ページを再読み込みしてください。');
+}
 
 const FRIEND_COLORS = ['#F6C90E','#5DBB63','#17A2B8','#E06C75','#9B59B6','#F07A30'];
 const CATEGORIES = ['🍜 ラーメン・麺類','🍣 寿司・魚','🍖 肉料理','🍕 洋食','🍱 和食','☕ カフェ・スイーツ','🌏 エスニック','🍺 居酒屋','その他'];
@@ -270,27 +280,36 @@ function checkLock() {
   const btn = document.getElementById('lock-btn');
   const err = document.getElementById('lock-err');
 
-  // ブラウザを閉じるまで有効にする（sessionStorageに保存）
+  // もしボタンなどの要素が取得できていなければ、ここで処理を止める
+  if (!btn || !input) return;
+
+  // 1回解除していたらそのまま通す
   if (sessionStorage.getItem('tomomeshi-unlocked') === 'true') {
     lock.style.display = 'none';
-    loadMemos(); // 解除されている場合のみデータを読み込む
+    if (supabase) loadMemos();
     return;
   }
 
+  // ボタンを押した時の処理
   btn.addEventListener('click', () => {
+    err.style.display = 'none'; // エラー表示を一旦消す
+    
     if (input.value === SECRET_WORD) {
       sessionStorage.setItem('tomomeshi-unlocked', 'true');
       lock.style.display = 'none';
-      loadMemos(); // 正解したらデータを読み込む
+      if (supabase) loadMemos(); 
     } else {
-      err.style.display = 'block';
+      err.style.display = 'block'; // 間違っていたらエラーを出す
       input.value = '';
     }
   });
 
-  // Enterキーでも解除できるようにする
+  // Enterキーでも押せるようにする
   input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') btn.click();
+    if (e.key === 'Enter') {
+      e.preventDefault(); // フォームの送信などを防ぐ
+      btn.click();
+    }
   });
 }
 
