@@ -33,18 +33,28 @@
 
   #app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
 
+  /* HEADER */
   .header {
-    background: var(--card); padding: 14px 16px; display: flex; justify-content: space-between;
-    align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000;
+    background: var(--card);
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
   }
   .header-title { font-size: 17px; font-weight: 700; }
   .header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
   .header-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;}
 
+  /* BUTTONS */
   .btn {
     display: inline-flex; align-items: center; justify-content: center;
-    border: none; cursor: pointer; font-family: inherit; font-weight: 700; border-radius: 22px;
-    padding: 9px 18px; font-size: 14px; transition: opacity .15s, transform .1s;
+    border: none; cursor: pointer; font-family: inherit;
+    font-weight: 700; border-radius: 22px; padding: 9px 18px;
+    font-size: 14px; transition: opacity .15s, transform .1s;
   }
   .btn:active { transform: scale(.96); opacity: .85; }
   .btn-primary { background: var(--orange); color: #fff; }
@@ -56,37 +66,85 @@
   .btn-sm      { padding: 6px 13px; font-size: 13px; border-radius: 10px; }
   .btn-back    { background: none; border: none; color: var(--orange); font-size: 15px; font-weight: 600; cursor: pointer; padding: 4px 10px 4px 0; font-family: inherit; }
 
+  /* CARDS */
   .card {
-    background: var(--card); border-radius: var(--radius); padding: 13px 15px; border-left: 4px solid #ccc;
-    box-shadow: 0 1px 5px rgba(0,0,0,.06); cursor: pointer; transition: box-shadow .15s;
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 13px 15px;
+    border-left: 4px solid #ccc;
+    box-shadow: 0 1px 5px rgba(0,0,0,.06);
+    cursor: pointer;
+    transition: box-shadow .15s;
   }
   .card:active { box-shadow: 0 2px 10px rgba(0,0,0,.12); }
 
-  .filter-bar { background: var(--card); border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+  /* FILTERS */
+  .filter-bar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
   .filter-row { display: flex; gap: 8px; }
   .search-input, .filter-select, .form-input, .form-textarea {
-    border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 13px; font-size: 14px;
-    font-family: inherit; background: #FAFAF8; color: var(--text); width: 100%; appearance: none; -webkit-appearance: none;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 13px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #FAFAF8;
+    color: var(--text);
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
   }
   .filter-select { width: auto; flex: 1; }
-  .form-input:focus, .form-textarea:focus, .search-input:focus { outline: none; border-color: var(--orange); }
+  .form-input:focus, .form-textarea:focus, .search-input:focus {
+    outline: none; border-color: var(--orange);
+  }
   .form-textarea { min-height: 80px; resize: vertical; }
 
-  .friend-tag { display: inline-block; color: #fff; font-size: 11px; font-weight: 700; border-radius: 10px; padding: 2px 9px; }
-  .badge { color: #fff; font-size: 11px; font-weight: 700; border-radius: 10px; padding: 3px 9px; white-space: nowrap; }
-  .form-label { font-size: 13px; font-weight: 700; color: #555; margin-bottom: 5px; margin-top: 16px; display: block; }
+  /* FRIEND TAG */
+  .friend-tag {
+    display: inline-block;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 2px 9px;
+  }
 
+  /* BADGE */
+  .badge {
+    color: #fff; font-size: 11px; font-weight: 700;
+    border-radius: 10px; padding: 3px 9px; white-space: nowrap;
+  }
+
+  /* LABEL */
+  .form-label {
+    font-size: 13px; font-weight: 700; color: #555;
+    margin-bottom: 5px; margin-top: 16px; display: block;
+  }
+
+  /* CHIP */
   .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
   .chip {
-    border: 1.5px solid var(--border); border-radius: 16px; padding: 5px 13px; font-size: 13px; cursor: pointer;
-    background: #FAFAF8; font-family: inherit; transition: background .12s, border-color .12s;
+    border: 1.5px solid var(--border); border-radius: 16px;
+    padding: 5px 13px; font-size: 13px; cursor: pointer;
+    background: #FAFAF8; font-family: inherit;
+    transition: background .12s, border-color .12s;
   }
   .chip.active { background: var(--orange); border-color: var(--orange); color: #fff; }
 
+  /* SUGGESTIONS */
   .sug-wrap { position: relative; }
   .sug-box {
-    position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1.5px solid var(--border);
-    border-radius: 12px; z-index: 200; box-shadow: 0 6px 20px rgba(0,0,0,.13); max-height: 260px; overflow-y: auto;
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
+    z-index: 200; box-shadow: 0 6px 20px rgba(0,0,0,.13);
+    max-height: 260px; overflow-y: auto;
   }
   .sug-item { padding: 11px 15px; cursor: pointer; border-bottom: 1px solid #F0EDE8; }
   .sug-item:last-child { border-bottom: none; }
@@ -95,10 +153,12 @@
   .sug-addr { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .sug-cat  { font-size: 11px; color: #bbb; margin-top: 1px; }
 
+  /* STATUS */
   .api-status { font-size: 12px; color: var(--muted); margin-top: 5px; }
   .addr-confirm { background: #E8F8F2; border-radius: 9px; padding: 8px 12px; margin-top: 7px; font-size: 13px; color: #2d7a6a; }
   .err-box { background: #FFF0F0; border: 1px solid #F5B8BC; border-radius: 9px; padding: 9px 13px; font-size: 13px; color: #b83232; margin-top: 7px; }
 
+  /* LIST */
   .list { padding: 13px 16px; display: flex; flex-direction: column; gap: 11px; }
   .card-title { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card-sub   { font-size: 12px; color: #666; margin-top: 3px; }
@@ -107,8 +167,10 @@
   .card-cat   { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
   .card-dist  { font-size: 12px; color: var(--teal); font-weight: bold; margin-top: 4px; }
 
+  /* EMPTY */
   .empty { text-align: center; color: var(--muted); padding: 56px 24px; font-size: 15px; line-height: 1.7; }
 
+  /* DETAIL */
   .detail-card { margin: 16px; border-radius: var(--radius); padding: 18px; border: 2px solid #ccc; background: #fff; }
   .detail-name { font-size: 22px; font-weight: 700; margin-top: 3px; }
   .detail-section { margin-top: 15px; }
@@ -116,12 +178,24 @@
   .detail-value { font-size: 15px; }
   .detail-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 
+  /* MAP */
   .map-frame { margin: 0 16px 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.10); }
-  .map-open-btn { display: inline-block; background: var(--teal); color: #fff; border-radius: 9px; padding: 5px 11px; font-size: 12px; text-decoration: none; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .map-open-btn {
+    display: inline-block; background: var(--teal); color: #fff;
+    border-radius: 9px; padding: 5px 11px; font-size: 12px;
+    text-decoration: none; font-weight: 700; white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* ACTIONS */
   .action-row { padding: 0 16px 28px; display: flex; gap: 10px; }
+
+  /* FORM */
   .form-body { padding: 4px 16px 32px; }
+
+  /* SCROLL */
   .scroll-area { flex: 1; overflow-y: auto; }
 
+  /* TOAST */
   #toast {
     position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
     background: #1E1E1E; color: #fff; padding: 10px 20px; border-radius: 22px;
@@ -130,14 +204,21 @@
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+  /* LOCK SCREEN */
   #lock-screen {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 10000;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--bg); z-index: 10000;
     display: flex; justify-content: center; align-items: center; padding: 20px;
   }
-  .lock-card { background: var(--card); padding: 32px 24px; border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,.08); width: 100%; max-width: 320px; text-align: center; }
+  .lock-card {
+    background: var(--card); padding: 32px 24px; border-radius: var(--radius);
+    box-shadow: 0 4px 20px rgba(0,0,0,.08); width: 100%; max-width: 320px; text-align: center;
+  }
 </style>
 </head>
 <body>
+
+<div style="position: fixed; top: 4px; left: 4px; font-size: 12px; font-weight: bold; color: #fff; z-index: 20000; background: #E06C75; padding: 2px 6px; border-radius: 4px; pointer-events: none;">v10</div>
 
 <div id="lock-screen">
   <div class="lock-card">
@@ -154,7 +235,10 @@
 <div id="toast"></div>
 
 <script>
+// ── ★合言葉の設定 ──
 const SECRET_WORD = 'ma';
+
+// ── ★データベース直結設定 ──
 const DB_URL = 'https://qvrkarxkwqjfopbwgavs.supabase.co/rest/v1/memos';
 const DB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2cmthcnhrd3FqZm9wYndnYXZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzMzODQsImV4cCI6MjA5NzAwOTM4NH0.wkTLeiCJMkQJ8t87osAZwxUUkgZBeTOgudb5WD4Kmg4';
 
@@ -164,6 +248,7 @@ const DB_HEADERS = {
   'Content-Type': 'application/json'
 };
 
+// ── 状態管理（STATE） ──
 const FRIEND_COLORS = ['#F6C90E','#5DBB63','#17A2B8','#E06C75','#9B59B6','#F07A30'];
 const CATEGORIES = ['🍜 ラーメン・麺類','🍣 寿司・魚','🍖 肉料理','🍕 洋食','🍱 和食','☕ カフェ・スイーツ','🌏 エスニック','🍺 居酒屋','その他'];
 
@@ -175,6 +260,7 @@ let state = {
 };
 let sugTimer = null;
 
+// ── 距離計算ロジック（直線距離） ──
 function getDistance(lat1, lon1, lat2, lon2) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
   const R = 6371e3;
@@ -187,16 +273,19 @@ function getDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+// ── 🔒 ロック解除機能 ──
 window.handleUnlock = function() {
   const input = document.getElementById('lock-pass');
   const err = document.getElementById('lock-err');
   const lock = document.getElementById('lock-screen');
+  
   if (!input) return;
   err.style.display = 'none';
+  
   if (input.value.trim() === SECRET_WORD) {
     try { sessionStorage.setItem('tomomeshi-unlocked', 'true'); } catch(e) {}
     lock.style.display = 'none';
-    loadMemos(); 
+    loadMemos(); // 解除後にデータ読み込み
   } else {
     err.style.display = 'block';
     input.value = '';
@@ -212,6 +301,7 @@ try {
 
 window.showDetail = function(id) { setState({view: 'detail', selected: id}); };
 
+// ── ★REST API直結データベース操作 ──
 async function loadMemos() {
   state.isLoadingData = true; render();
   try {
@@ -220,7 +310,9 @@ async function loadMemos() {
     const data = await res.json();
     state.memos = data;
     state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
-  } catch(err) { console.error(err); toast('データの読み込みに失敗しました'); }
+  } catch(err) {
+    console.error(err); toast('データの読み込みに失敗しました');
+  }
   state.isLoadingData = false; render();
 }
 
@@ -247,10 +339,13 @@ async function addMemo() {
     } catch(e) { console.log('位置情報補完エラー', e); }
   }
 
+  // ★ Supabaseの float8 に弾かれないよう、強制的にNumber型に変換して保存
   const memo = {
     name: state.form.name.trim(), friend: friend, category: state.form.category,
     menu: state.form.menu.trim(), note: state.form.note.trim(), address: finalAddr,
-    lat: finalLat || null, lng: finalLng || null, visited: state.form.visited,
+    lat: finalLat ? Number(finalLat) : null, 
+    lng: finalLng ? Number(finalLng) : null, 
+    visited: state.form.visited,
     createdAt: new Date().toLocaleDateString('ja-JP')
   };
 
@@ -270,31 +365,46 @@ async function addMemo() {
       _addFormEl = null; state.view = 'list';
       toast('📝 保存しました！'); render();
     }
-  } catch(err) { toast('保存に失敗しました'); console.error(err); }
+  } catch(err) {
+    toast('保存に失敗しました'); console.error(err);
+  }
 }
 
 async function toggleVisited(id) {
   const memo = state.memos.find(m => m.id === id); if (!memo) return;
   const newStatus = !memo.visited;
   state.memos = state.memos.map(m => m.id === id ? { ...m, visited: newStatus } : m); render();
+  
   try {
-    const res = await fetch(DB_URL + '?id=eq.' + id, { method: 'PATCH', headers: DB_HEADERS, body: JSON.stringify({ visited: newStatus }) });
+    const res = await fetch(DB_URL + '?id=eq.' + id, {
+      method: 'PATCH',
+      headers: DB_HEADERS,
+      body: JSON.stringify({ visited: newStatus })
+    });
     if (!res.ok) throw new Error('Update failed');
-  } catch(err) { toast('更新に失敗しました'); state.memos = state.memos.map(m => m.id === id ? { ...m, visited: memo.visited } : m); render(); }
+  } catch(err) {
+    toast('更新に失敗しました');
+    state.memos = state.memos.map(m => m.id === id ? { ...m, visited: memo.visited } : m); render();
+  }
 }
 
 async function deleteMemo(id) {
   if (!confirm('このメモを削除しますか？')) return;
   toast('削除中...');
+  
   try {
     const res = await fetch(DB_URL + '?id=eq.' + id, { method: 'DELETE', headers: DB_HEADERS });
     if (!res.ok) throw new Error('Delete failed');
+    
     state.memos = state.memos.filter(m => m.id !== id);
     state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
     state.view = 'list'; toast('🗑 削除しました'); render();
-  } catch(err) { toast('削除に失敗しました'); }
+  } catch(err) {
+    toast('削除に失敗しました');
+  }
 }
 
+// ── CSV EXPORT ──
 function exportCSV() {
   if (state.memos.length === 0) { toast('出力するデータがありません'); return; }
   const headers = ['店名', '友達', 'カテゴリ', 'メニュー', 'メモ', '住所', '行ったか', '登録日'];
@@ -310,8 +420,10 @@ function exportCSV() {
   link.download = 'tomodachi-meshi_data.csv'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
 }
 
+// ── HELPERS ──
 function getFriendColor(name, friends) {
-  const idx = friends.indexOf(name); return FRIEND_COLORS[(idx >= 0 ? idx : friends.length) % FRIEND_COLORS.length];
+  const idx = friends.indexOf(name);
+  return FRIEND_COLORS[(idx >= 0 ? idx : friends.length) % FRIEND_COLORS.length];
 }
 function mapEmbedUrl(addr) { return `https://maps.google.com/maps?q=${encodeURIComponent(addr)}&output=embed&z=16`; }
 function mapLinkUrl(name, addr) { return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name+' '+addr)}`; }
@@ -320,6 +432,7 @@ function toast(msg) {
   setTimeout(() => el.classList.remove('show'), 2200);
 }
 
+// ── OpenStreetMap API ──
 async function apiSearch(query) {
   const p = new URLSearchParams({ q: query, format: 'json', addressdetails: 1, limit: 8, countrycodes: 'jp' });
   const res = await fetch(`https://nominatim.openstreetmap.org/search?${p}`, { headers: { 'Accept-Language': 'ja' } });
@@ -344,6 +457,7 @@ function getLocation() {
   });
 }
 
+// ── ACTIONS ──
 function setState(patch) { if (patch.view && patch.view !== 'add') _addFormEl = null; Object.assign(state, patch); render(); }
 
 async function handleNameInput(val) {
@@ -381,6 +495,7 @@ async function loadNearby() {
 
 function addFromNearby(place) { state.form = { ...state.form, name: place.name, address: place.address, lat: place.lat, lng: place.lng }; _addFormEl = null; state.view = 'add'; render(); }
 
+// ── RENDER HELPERS ──
 function filteredMemos() { 
   let results = state.memos.filter(m => { 
     if (state.filter.friend && m.friend !== state.filter.friend) return false; 
@@ -389,64 +504,124 @@ function filteredMemos() {
     if (state.filter.search) { const q = state.filter.search; if (![m.name, m.menu, m.friend, m.address].some(v => v && v.includes(q))) return false; } 
     return true; 
   }); 
+
+  // ★「近い順ソート」の処理（強制的にNumber変換して計算）
   if (state.filter.sort === 'near' && state.userLL) {
     const [uLat, uLng] = state.userLL.split(',').map(Number);
-    results.forEach(m => { m._dist = getDistance(uLat, uLng, m.lat, m.lng); });
+    results.forEach(m => {
+      m._dist = getDistance(uLat, uLng, Number(m.lat), Number(m.lng));
+    });
+    // 距離が計算できない（Infinity）のものは下へ
     results.sort((a, b) => a._dist - b._dist);
   } else {
+    // 新しい順（標準）の場合はリセット
     results.forEach(m => m._dist = null);
   }
+
   return results;
 }
 
 function h(tag, attrs={}, ...children) { const el = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === 'cls') el.className = v; else if (k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v); else if (k === 'html') el.innerHTML = v; else if (v !== null && v !== undefined && v !== false) el.setAttribute(k, v); } for (const c of children.flat()) { if (c == null || c === false) continue; el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); } return el; }
 function badge(visited) { return h('span', { cls: 'badge', style: `background:${visited ? '#5DBB63' : '#aaa'}` }, visited ? '✅ 行った' : '📍 未訪問'); }
 
+// ── RENDER ──
 function render() {
   const app = document.getElementById('app'); app.innerHTML = '';
   if (state.view === 'nearby') { app.append(renderNearby()); return; }
   if (state.view === 'add')    { app.append(renderAdd());    return; }
   if (state.view === 'detail') { app.append(renderDetail()); return; }
-  if (state.view === 'map')    { app.append(renderMap());    return; }
+  if (state.view === 'map')    { app.append(renderMap());    return; } // ★マップビューへの切り替え
   app.append(renderList());
 }
 
+// ★ MAP VIEW
 function renderMap() {
   const wrap = h('div', {style:'display:flex;flex-direction:column;min-height:100vh;flex:1;'});
-  const header = h('div', {cls:'header'}, h('div', {}, h('div', {cls:'header-title'}, '🗺 マップ'), h('div', {cls:'header-sub'}, `登録済みの場所を表示`)), h('div', {cls:'header-actions'}, h('button', {cls:'btn btn-teal btn-sm', onClick: () => setState({view:'list'})}, '📝 リストへ戻る')));
+  
+  const header = h('div', {cls:'header'}, 
+    h('div', {}, h('div', {cls:'header-title'}, '🗺 マップ'), h('div', {cls:'header-sub'}, `登録済みの場所を表示`)), 
+    h('div', {cls:'header-actions'}, 
+      h('button', {cls:'btn btn-teal btn-sm', onClick: () => setState({view:'list'})}, '📝 リストへ戻る')
+    )
+  );
+
+  // マップを描画するための空の枠
   const mapDiv = h('div', {id:'map-container', style:'flex:1;width:100%;z-index:1;'});
   wrap.append(header, mapDiv);
 
+  // HTMLのDOMに挿入された直後にLeafletを初期化する
   setTimeout(() => {
-    if (typeof L === 'undefined') { mapDiv.innerHTML = '<div class="empty">地図の読み込みに失敗しました</div>'; return; }
+    // Leafletが読み込まれていなければエラーを防ぐ
+    if (typeof L === 'undefined') {
+      mapDiv.innerHTML = '<div class="empty">地図の読み込みに失敗しました</div>';
+      return;
+    }
+
+    // 地図の初期化（一旦東京を中心にする）
     const map = L.map('map-container').setView([35.681236, 139.767125], 10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
     const bounds = [];
     state.memos.forEach(m => {
+      // 緯度経度があるメモだけピンを立てる（強制Number化）
       if (m.lat && m.lng) {
-        const marker = L.marker([m.lat, m.lng]).addTo(map);
-        marker.bindPopup(`<div style="font-weight:bold;font-size:14px;margin-bottom:4px;">${m.name}</div><div style="font-size:11px;color:#666;margin-bottom:8px;">${m.category}</div><button class="btn btn-teal btn-sm" onclick="showDetail(${m.id})">詳細を見る</button>`);
-        bounds.push([m.lat, m.lng]);
+        const marker = L.marker([Number(m.lat), Number(m.lng)]).addTo(map);
+        // ピンをタップした時の吹き出し（Popup）
+        marker.bindPopup(`
+          <div style="font-weight:bold;font-size:14px;margin-bottom:4px;">${m.name}</div>
+          <div style="font-size:11px;color:#666;margin-bottom:8px;">${m.category}</div>
+          <button class="btn btn-teal btn-sm" onclick="showDetail(${m.id})">詳細を見る</button>
+        `);
+        bounds.push([Number(m.lat), Number(m.lng)]);
       }
     });
-    if (bounds.length > 0) { map.fitBounds(bounds, {padding: [30, 30]}); } 
-    else if (state.userLL) { const [lat, lng] = state.userLL.split(','); map.setView([lat, lng], 13); }
+
+    // ピンが1つ以上あれば、すべてのピンが画面に収まるようにズームを自動調整
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, {padding: [30, 30]});
+    } else if (state.userLL) {
+      // ピンがないけど現在地がわかっている場合は現在地へ
+      const [lat, lng] = state.userLL.split(',');
+      map.setView([Number(lat), Number(lng)], 13);
+    }
   }, 100);
+
   return wrap;
 }
 
+// LIST
 function renderList() {
   const memos = filteredMemos(); const noyet = state.memos.filter(m => !m.visited).length;
-  const header = h('div', {cls:'header'}, h('div', {}, h('div', {cls:'header-title'}, '🍽 友メシ'), h('div', {cls:'header-sub'}, `まだ行ってない：${noyet}件`)), h('div', {cls:'header-actions'}, h('button', {cls:'btn btn-gray btn-sm', onClick: exportCSV}, '📄 CSV'), h('button', {cls:'btn btn-teal btn-sm', onClick: () => { setState({view:'map'}); }}, '🗺 マップ'), h('button', {cls:'btn btn-primary btn-sm', onClick: () => { setState({view:'add'}); }}, '＋ 追加')));
+  const header = h('div', {cls:'header'}, 
+    h('div', {}, h('div', {cls:'header-title'}, '🍽 友メシ'), h('div', {cls:'header-sub'}, `まだ行ってない：${noyet}件`)), 
+    h('div', {cls:'header-actions'}, 
+      h('button', {cls:'btn btn-gray btn-sm', onClick: exportCSV}, '📄 CSV'), 
+      h('button', {cls:'btn btn-teal btn-sm', onClick: () => { setState({view:'map'}); }}, '🗺 マップ'),
+      h('button', {cls:'btn btn-primary btn-sm', onClick: () => { setState({view:'add'}); }}, '＋ 追加')
+    )
+  );
+  
   const searchEl = h('input', { cls:'search-input', placeholder:'🔍 店名・友達・住所...', value: state.filter.search, onInput: e => { state.filter.search = e.target.value; render(); } });
   const friendSel = h('select', { cls:'filter-select', onChange: e => { state.filter.friend = e.target.value; render(); } }, h('option', {value:''}, '全員'), ...state.friends.map(fr => { const opt = h('option', {value:fr}, fr); if (state.filter.friend === fr) opt.selected = true; return opt; }));
   const visitedSel = h('select', { cls:'filter-select', onChange: e => { state.filter.visited = e.target.value; render(); } }, ...[['all','全部'],['notyet','未訪問'],['visited','行った']].map(([v,l]) => { const opt = h('option', {value:v}, l); if (state.filter.visited === v) opt.selected = true; return opt; }));
+  
+  // ★ ソート順のセレクトボックス
   const sortSel = h('select', { cls:'filter-select', onChange: async e => { 
     const val = e.target.value;
-    if (val === 'near') { if (!state.userLL) { toast('現在地を取得しています...'); try { await getLocation(); } catch(err) { toast(err); e.target.value = 'new'; return; } } }
-    state.filter.sort = val; render();
-  }}, h('option', {value:'new'}, '新しい順'), h('option', {value:'near', selected: state.filter.sort === 'near'}, '現在地から近い順'));
+    if (val === 'near') {
+      if (!state.userLL) {
+        toast('現在地を取得しています...');
+        try { await getLocation(); } catch(err) { toast(err); e.target.value = 'new'; return; }
+      }
+    }
+    state.filter.sort = val;
+    render();
+  }}, 
+    h('option', {value:'new'}, '新しい順'),
+    h('option', {value:'near', selected: state.filter.sort === 'near'}, '現在地から近い順')
+  );
 
   const filters = h('div', {cls:'filter-bar'}, searchEl, h('div', {cls:'filter-row'}, friendSel, visitedSel, sortSel));
   const listEl = h('div', {cls:'list scroll-area'});
@@ -454,8 +629,25 @@ function renderList() {
   if (state.isLoadingData) { listEl.append(h('div', {cls:'empty'}, '☁️ データを読み込み中...')); } else if (memos.length === 0) { listEl.append(h('div', {cls:'empty'}, state.memos.length === 0 ? '＋ ボタンで\n友達のおすすめを追加しよう！' : '該当するメモがありません')); } else {
     for (const m of memos) {
       const color = getFriendColor(m.friend, state.friends);
-      let distText = null; if (m._dist && m._dist !== Infinity) { distText = h('div', {cls:'card-dist'}, `🚶 約 ${Math.round(m._dist)} m`); }
-      listEl.append(h('div', { cls:'card', style:`border-left-color:${color};opacity:${m.visited?0.6:1}`, onClick: () => { state.selected = m.id; state.view = 'detail'; render(); } }, h('div', {style:'display:flex;justify-content:space-between;align-items:flex-start'}, h('div', {style:'flex:1;min-width:0'}, h('div', {cls:'card-cat'}, m.category), h('div', {cls:'card-title'}, m.name), m.menu ? h('div', {cls:'card-sub'}, '🍽 ' + m.menu) : null, m.address ? h('div', {cls:'card-addr'}, '📍 ' + m.address) : null, distText), h('span', {cls:'badge', style:`background:${m.visited?'#5DBB63':'#bbb'};margin-left:8px;flex-shrink:0`}, m.visited ? '行った✓' : '未訪問')), h('div', {cls:'card-row'}, h('span', {cls:'friend-tag', style:`background:${color}`}, '👤 ' + m.friend), m.address ? h('span', {style:'font-size:11px;color:var(--teal)'}, '🗺 地図あり') : null)));
+      
+      // ★距離が計算されていれば表示用のテキストを作成
+      let distText = null;
+      if (m._dist && m._dist !== Infinity) {
+        distText = h('div', {cls:'card-dist'}, `🚶 約 ${Math.round(m._dist)} m`);
+      }
+
+      listEl.append(h('div', { cls:'card', style:`border-left-color:${color};opacity:${m.visited?0.6:1}`, onClick: () => { state.selected = m.id; state.view = 'detail'; render(); } }, 
+        h('div', {style:'display:flex;justify-content:space-between;align-items:flex-start'}, 
+          h('div', {style:'flex:1;min-width:0'}, 
+            h('div', {cls:'card-cat'}, m.category), 
+            h('div', {cls:'card-title'}, m.name), 
+            m.menu ? h('div', {cls:'card-sub'}, '🍽 ' + m.menu) : null, 
+            m.address ? h('div', {cls:'card-addr'}, '📍 ' + m.address) : null,
+            distText // ★距離を表示
+          ), 
+          h('span', {cls:'badge', style:`background:${m.visited?'#5DBB63':'#bbb'};margin-left:8px;flex-shrink:0`}, m.visited ? '行った✓' : '未訪問')
+        ), 
+        h('div', {cls:'card-row'}, h('span', {cls:'friend-tag', style:`background:${color}`}, '👤 ' + m.friend), m.address ? h('span', {style:'font-size:11px;color:var(--teal)'}, '🗺 地図あり') : null)));
     }
   }
   return h('div', {style:'display:flex;flex-direction:column;min-height:100vh'}, header, filters, listEl);
@@ -470,7 +662,11 @@ function buildAddForm() {
   body.append(lbl('お店の名前 *'));
   const sugWrap = document.createElement('div'); sugWrap.className = 'sug-wrap'; const nameInput = document.createElement('input'); nameInput.className = 'form-input'; nameInput.placeholder = '2文字以上入力すると候補が出ます'; nameInput.autocomplete = 'off'; nameInput.value = state.form.name; nameInput.addEventListener('input', e => handleNameInput(e.target.value)); nameInput.addEventListener('focus', () => { if (state.suggestions.length > 0) patchAddForm(); }); nameInput.addEventListener('blur', () => setTimeout(() => { state.showSug = false; patchAddForm(); }, 200)); sugWrap.append(nameInput); const sugBox = document.createElement('div'); sugWrap.append(sugBox); body.append(sugWrap);
   const statusEl = document.createElement('div'); body.append(statusEl); 
-  body.append(lbl('住所')); const addrInput = document.createElement('input'); addrInput.className = 'form-input'; addrInput.placeholder = '住所（自動入力、または手動で入力）'; addrInput.value = state.form.address; addrInput.addEventListener('input', e => { state.form.address = e.target.value; }); body.append(addrInput);
+  
+  // ★手動入力用の住所フィールド
+  body.append(lbl('住所'));
+  const addrInput = document.createElement('input'); addrInput.className = 'form-input'; addrInput.placeholder = '住所（自動入力、または手動で入力）'; addrInput.value = state.form.address; addrInput.addEventListener('input', e => { state.form.address = e.target.value; }); body.append(addrInput);
+  
   body.append(lbl('教えてくれた友達 *')); const chipRow = document.createElement('div'); chipRow.className = 'chip-row'; body.append(chipRow); const friendInput = document.createElement('input'); friendInput.className = 'form-input'; friendInput.placeholder = '新しい友達の名前を入力'; friendInput.value = state.form.friendNew; friendInput.addEventListener('input', e => { state.form = {...state.form, friendNew: e.target.value, friend:''}; patchAddForm(); }); body.append(friendInput);
   body.append(lbl('カテゴリ')); const catSel = document.createElement('select'); catSel.className = 'form-input'; CATEGORIES.forEach(c => { const o = document.createElement('option'); o.value = o.textContent = c; catSel.append(o); }); catSel.value = state.form.category; catSel.addEventListener('change', e => { state.form = {...state.form, category: e.target.value}; }); body.append(catSel);
   body.append(lbl('おすすめメニュー')); const menuInput = document.createElement('input'); menuInput.className = 'form-input'; menuInput.placeholder = '例：担々麺、チャーハン'; menuInput.value = state.form.menu; menuInput.addEventListener('input', e => { state.form = {...state.form, menu: e.target.value}; }); body.append(menuInput);
@@ -484,10 +680,14 @@ function patchAddForm() {
   if (!_addFormEl) return; const { nameInput, sugBox, statusEl, addrInput, chipRow, saveBtn } = _addFormEl._refs; const f = state.form;
   sugBox.innerHTML = ''; if (state.showSug && state.suggestions.length > 0) { sugBox.className = 'sug-box'; state.suggestions.forEach(s => { sugBox.append(h('div', {cls:'sug-item', onMousedown: () => pickSuggestion(s)}, h('div', {cls:'sug-name'}, s.name), s.address ? h('div', {cls:'sug-addr'}, s.address) : null, s.category ? h('div', {cls:'sug-cat'}, s.category) : null)); }); } else { sugBox.className = ''; }
   if (state.apiError) { statusEl.className = 'err-box'; statusEl.textContent = state.apiError; } else if (state.apiStatus) { statusEl.className = 'api-status'; statusEl.textContent = '🔍 ' + state.apiStatus; } else { statusEl.className = ''; statusEl.textContent = ''; }
+  
+  // 入力中でない時だけ自動で住所をセットする
   if (addrInput && document.activeElement !== addrInput) { addrInput.value = f.address || ''; }
+
   chipRow.innerHTML = ''; state.friends.forEach(fr => { const btn = document.createElement('button'); btn.className = 'chip' + (f.friend === fr && !f.friendNew ? ' active' : ''); btn.textContent = fr; btn.addEventListener('click', () => { state.form = {...state.form, friend: fr, friendNew: ''}; _addFormEl._refs.friendInput.value = ''; patchAddForm(); }); chipRow.append(btn); });
   const canSave = f.name.trim() && (f.friendNew.trim() || f.friend); saveBtn.style.opacity = canSave ? '1' : '0.4';
 }
+
 function renderAdd() { if (!_addFormEl) _addFormEl = buildAddForm(); patchAddForm(); return _addFormEl; }
 function lbl(text) { const el = document.createElement('label'); el.className = 'form-label'; el.textContent = text; return el; }
 
