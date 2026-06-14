@@ -452,4 +452,410 @@ function h(tag, attrs={}, ...children) {
     else if (v !== null && v !== undefined && v !== false) el.setAttribute(k, v);
   }
   for (const c of children.flat()) {
-    if (c == null
+    if (c == null || c === false) continue;
+    el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return el;
+}
+
+function badge(visited) {
+  return h('span', {
+    cls: 'badge',
+    style: `background:${visited ? '#5DBB63' : '#aaa'}`
+  }, visited ? '✅ 行った' : '📍 未訪問');
+}
+
+// ── RENDER ──
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  if (state.view === 'nearby') { app.append(renderNearby()); return; }
+  if (state.view === 'add')    { app.append(renderAdd());    return; }
+  if (state.view === 'detail') { app.append(renderDetail()); return; }
+  app.append(renderList());
+}
+
+// LIST
+function renderList() {
+  const memos = filteredMemos();
+  const noyet = state.memos.filter(m => !m.visited).length;
+
+  const header = h('div', {cls:'header'},
+    h('div', {},
+      h('div', {cls:'header-title'}, '🍽 友メシ'),
+      h('div', {cls:'header-sub'}, `まだ行ってない：${noyet}件`)
+    ),
+    h('div', {cls:'header-actions'},
+      h('button', {cls:'btn btn-teal btn-sm', onClick: () => { setState({view:'nearby'}); }}, '📍 近く'),
+      h('button', {cls:'btn btn-primary btn-sm', onClick: () => { setState({view:'add'}); }}, '＋ 追加')
+    )
+  );
+
+  const searchEl = h('input', {
+    cls:'search-input', placeholder:'🔍 店名・友達・住所で検索...', value: state.filter.search,
+    onInput: e => { state.filter.search = e.target.value; render(); }
+  });
+
+  const friendSel = h('select', {
+    cls:'filter-select',
+    onChange: e => { state.filter.friend = e.target.value; render(); }
+  },
+    h('option', {value:''}, '全員'),
+    ...state.friends.map(fr => {
+      const opt = h('option', {value:fr}, fr);
+      if (state.filter.friend === fr) opt.selected = true;
+      return opt;
+    })
+  );
+
+  const visitedSel = h('select', {
+    cls:'filter-select',
+    onChange: e => { state.filter.visited = e.target.value; render(); }
+  },
+    ...[['all','全部'],['notyet','未訪問'],['visited','行った']].map(([v,l]) => {
+      const opt = h('option', {value:v}, l);
+      if (state.filter.visited === v) opt.selected = true;
+      return opt;
+    })
+  );
+
+  const filters = h('div', {cls:'filter-bar'},
+    searchEl,
+    h('div', {cls:'filter-row'}, friendSel, visitedSel)
+  );
+
+  const listEl = h('div', {cls:'list scroll-area'});
+  if (memos.length === 0) {
+    listEl.append(h('div', {cls:'empty'}, state.memos.length === 0
+      ? '＋ ボタンで\n友達のおすすめを追加しよう！'
+      : '該当するメモがありません'));
+  } else {
+    for (const m of memos) {
+      const color = getFriendColor(m.friend, state.friends);
+      const card = h('div', {
+        cls:'card',
+        style:`border-left-color:${color};opacity:${m.visited?0.6:1}`,
+        onClick: () => { state.selected = m.id; state.view = 'detail'; render(); }
+      },
+        h('div', {style:'display:flex;justify-content:space-between;align-items:flex-start'},
+          h('div', {style:'flex:1;min-width:0'},
+            h('div', {cls:'card-cat'}, m.category),
+            h('div', {cls:'card-title'}, m.name),
+            m.menu ? h('div', {cls:'card-sub'}, '🍽 ' + m.menu) : null,
+            m.address ? h('div', {cls:'card-addr'}, '📍 ' + m.address) : null,
+          ),
+          h('span', {cls:'badge', style:`background:${m.visited?'#5DBB63':'#bbb'};margin-left:8px;flex-shrink:0`},
+            m.visited ? '行った✓' : '未訪問')
+        ),
+        h('div', {cls:'card-row'},
+          h('span', {cls:'friend-tag', style:`background:${color}`}, '👤 ' + m.friend),
+          m.address ? h('span', {style:'font-size:11px;color:var(--teal)'}, '🗺 地図あり') : null
+        )
+      );
+      listEl.append(card);
+    }
+  }
+
+  const wrap = h('div', {style:'display:flex;flex-direction:column;min-height:100vh'}, header, filters, listEl);
+  return wrap;
+}
+
+// ADD
+let _addFormEl = null;
+
+function buildAddForm() {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;flex-direction:column;min-height:100vh';
+
+  // header
+  const header = h('div', {cls:'header'},
+    h('button', {cls:'btn-back', onClick: () => { _addFormEl = null; setState({view:'list'}); }}, '← 戻る'),
+    h('span', {cls:'header-title'}, '新しいメモ')
+  );
+  wrap.append(header);
+
+  // form body
+  const body = document.createElement('div');
+  body.className = 'form-body scroll-area';
+  wrap.append(body);
+
+  // 店名
+  body.append(lbl('お店の名前 *'));
+  const sugWrap = document.createElement('div');
+  sugWrap.className = 'sug-wrap';
+  const nameInput = document.createElement('input');
+  nameInput.className = 'form-input';
+  nameInput.placeholder = '2文字以上入力すると候補が出ます';
+  nameInput.autocomplete = 'off';
+  nameInput.value = state.form.name;
+  nameInput.addEventListener('input', e => handleNameInput(e.target.value));
+  nameInput.addEventListener('focus', () => { if (state.suggestions.length > 0) patchAddForm(); });
+  nameInput.addEventListener('blur', () => setTimeout(() => { state.showSug = false; patchAddForm(); }, 200));
+  sugWrap.append(nameInput);
+  const sugBox = document.createElement('div'); 
+  sugWrap.append(sugBox);
+  body.append(sugWrap);
+
+  // ステータス行
+  const statusEl = document.createElement('div');
+  body.append(statusEl);
+
+  // 住所確認
+  const addrEl = document.createElement('div');
+  body.append(addrEl);
+
+  // 友達
+  body.append(lbl('教えてくれた友達 *'));
+  const chipRow = document.createElement('div');
+  chipRow.className = 'chip-row';
+  body.append(chipRow);
+  const friendInput = document.createElement('input');
+  friendInput.className = 'form-input';
+  friendInput.placeholder = '新しい友達の名前を入力';
+  friendInput.value = state.form.friendNew;
+  friendInput.addEventListener('input', e => {
+    state.form = {...state.form, friendNew: e.target.value, friend:''};
+    patchAddForm();
+  });
+  body.append(friendInput);
+
+  // カテゴリ
+  body.append(lbl('カテゴリ'));
+  const catSel = document.createElement('select');
+  catSel.className = 'form-input';
+  CATEGORIES.forEach(c => { const o = document.createElement('option'); o.value = o.textContent = c; catSel.append(o); });
+  catSel.value = state.form.category;
+  catSel.addEventListener('change', e => { state.form = {...state.form, category: e.target.value}; });
+  body.append(catSel);
+
+  // メニュー
+  body.append(lbl('おすすめメニュー'));
+  const menuInput = document.createElement('input');
+  menuInput.className = 'form-input';
+  menuInput.placeholder = '例：担々麺、チャーハン';
+  menuInput.value = state.form.menu;
+  menuInput.addEventListener('input', e => { state.form = {...state.form, menu: e.target.value}; });
+  body.append(menuInput);
+
+  // メモ
+  body.append(lbl('メモ・コメント'));
+  const noteTA = document.createElement('textarea');
+  noteTA.className = 'form-textarea';
+  noteTA.placeholder = '例：辛さ調節できる、夜は混む';
+  noteTA.value = state.form.note;
+  noteTA.addEventListener('input', e => { state.form = {...state.form, note: e.target.value}; });
+  body.append(noteTA);
+
+  // 行った
+  const visitedLabel = document.createElement('label');
+  visitedLabel.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;color:#555;cursor:pointer';
+  const visitedCb = document.createElement('input');
+  visitedCb.type = 'checkbox';
+  visitedCb.checked = state.form.visited;
+  visitedCb.addEventListener('change', e => { state.form = {...state.form, visited: e.target.checked}; });
+  visitedLabel.append(visitedCb, 'もう行った');
+  body.append(visitedLabel);
+
+  // 保存ボタン
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn btn-primary btn-full';
+  saveBtn.style.marginTop = '20px';
+  saveBtn.textContent = '💾 保存する';
+  saveBtn.addEventListener('click', () => {
+    state.form.name    = nameInput.value.trim() || state.form.name;
+    state.form.menu    = menuInput.value;
+    state.form.note    = noteTA.value;
+    state.form.friendNew = friendInput.value;
+    state.form.category  = catSel.value;
+    state.form.visited   = visitedCb.checked;
+    addMemo();
+  });
+  body.append(saveBtn);
+
+  wrap._refs = { nameInput, sugBox, statusEl, addrEl, chipRow, friendInput, catSel, menuInput, noteTA, visitedCb, saveBtn };
+  return wrap;
+}
+
+function patchAddForm() {
+  if (!_addFormEl) return;
+  const { nameInput, sugBox, statusEl, addrEl, chipRow, saveBtn } = _addFormEl._refs;
+  const f = state.form;
+
+  // 候補ドロップダウン更新
+  sugBox.innerHTML = '';
+  if (state.showSug && state.suggestions.length > 0) {
+    sugBox.className = 'sug-box';
+    state.suggestions.forEach(s => {
+      const item = h('div', {cls:'sug-item', onMousedown: () => pickSuggestion(s)},
+        h('div', {cls:'sug-name'}, s.name),
+        s.address ? h('div', {cls:'sug-addr'}, s.address) : null,
+        s.category ? h('div', {cls:'sug-cat'}, s.category) : null,
+      );
+      sugBox.append(item);
+    });
+  } else {
+    sugBox.className = '';
+  }
+
+  // ステータス
+  if (state.apiError) {
+    statusEl.className = 'err-box'; statusEl.textContent = state.apiError;
+  } else if (state.apiStatus) {
+    statusEl.className = 'api-status'; statusEl.textContent = '🔍 ' + state.apiStatus;
+  } else {
+    statusEl.className = ''; statusEl.textContent = '';
+  }
+
+  // 住所
+  if (f.address) {
+    addrEl.className = 'addr-confirm'; addrEl.textContent = '✅ 住所自動入力済み：' + f.address;
+  } else {
+    addrEl.className = 'api-status'; addrEl.textContent = '候補を選ぶと住所が自動で入ります';
+  }
+
+  // 友達チップ
+  chipRow.innerHTML = '';
+  state.friends.forEach(fr => {
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (f.friend === fr && !f.friendNew ? ' active' : '');
+    btn.textContent = fr;
+    btn.addEventListener('click', () => {
+      state.form = {...state.form, friend: fr, friendNew: ''};
+      _addFormEl._refs.friendInput.value = '';
+      patchAddForm();
+    });
+    chipRow.append(btn);
+  });
+
+  // 保存ボタン活性
+  const friend = f.friendNew.trim() || f.friend;
+  const canSave = f.name.trim() && friend;
+  saveBtn.style.opacity = canSave ? '1' : '0.4';
+}
+
+function renderAdd() {
+  if (!_addFormEl) _addFormEl = buildAddForm();
+  patchAddForm();
+  return _addFormEl;
+}
+
+function lbl(text) {
+  const el = document.createElement('label');
+  el.className = 'form-label';
+  el.textContent = text;
+  return el;
+}
+
+// DETAIL
+function renderDetail() {
+  const m = state.memos.find(x => x.id === state.selected);
+  if (!m) { state.view = 'list'; render(); return h('div'); }
+  const color = getFriendColor(m.friend, state.friends);
+
+  const detailCard = h('div', {cls:'detail-card', style:`border-color:${color}`},
+    h('div', {style:'display:flex;justify-content:space-between;align-items:flex-start'},
+      h('div', {},
+        h('div', {style:'font-size:11px;color:var(--muted)'}, m.category),
+        h('div', {cls:'detail-name'}, m.name),
+      ),
+      badge(m.visited)
+    ),
+    h('span', {cls:'friend-tag', style:`background:${color};margin-top:10px`}, '👤 ' + m.friend + ' より'),
+    m.menu ? h('div', {cls:'detail-section'},
+      h('div', {cls:'detail-label'}, '🍽 おすすめメニュー'),
+      h('div', {cls:'detail-value'}, m.menu)
+    ) : null,
+    m.note ? h('div', {cls:'detail-section'},
+      h('div', {cls:'detail-label'}, '📝 メモ'),
+      h('div', {cls:'detail-value'}, m.note)
+    ) : null,
+    m.address ? h('div', {cls:'detail-section'},
+      h('div', {cls:'detail-label'}, '📍 住所'),
+      h('div', {cls:'detail-row'},
+        h('div', {cls:'detail-value', style:'font-size:14px'}, m.address),
+        h('a', {cls:'map-open-btn', href: mapLinkUrl(m.name, m.address), target:'_blank', rel:'noopener noreferrer'}, 'マップで開く')
+      )
+    ) : null,
+    h('div', {style:'font-size:11px;color:var(--muted);margin-top:14px'}, '登録日: ' + m.createdAt)
+  );
+
+  const mapFrame = m.address ? h('div', {cls:'map-frame'},
+    h('iframe', {
+      title:'map', src: mapEmbedUrl(m.address),
+      width:'100%', height:'220',
+      style:'border:none;display:block',
+      loading:'lazy', referrerpolicy:'no-referrer-when-downgrade'
+    })
+  ) : null;
+
+  const actions = h('div', {cls:'action-row'},
+    h('button', {
+      cls:`btn btn-full ${m.visited ? 'btn-gray' : 'btn-green'}`,
+      style:'flex:1',
+      onClick: () => { toggleVisited(m.id); }
+    }, m.visited ? '未訪問に戻す' : '✅ 行った！'),
+    h('button', {
+      cls:'btn btn-red btn-full',
+      style:'flex:1',
+      onClick: () => deleteMemo(m.id)
+    }, '🗑 削除')
+  );
+
+  return h('div', {style:'display:flex;flex-direction:column;min-height:100vh'},
+    h('div', {cls:'header'},
+      h('button', {cls:'btn-back', onClick: () => setState({view:'list'})}, '← 戻る'),
+      h('span', {cls:'header-title'}, '詳細')
+    ),
+    h('div', {cls:'scroll-area'}, detailCard, mapFrame, actions)
+  );
+}
+
+// NEARBY
+function renderNearby() {
+  const loadBtn = h('button', {
+    cls:'btn btn-teal btn-full',
+    style:'margin-bottom:14px',
+    onClick: loadNearby
+  }, state.nearbyLoading ? '取得中...' : '🔍 現在地から探す');
+
+  const listEl = h('div', {});
+  if (state.nearbyError) listEl.append(h('div', {cls:'err-box'}, state.nearbyError));
+  if (!state.nearbyLoading && !state.nearbyError && state.nearby.length === 0) {
+    listEl.append(h('div', {cls:'empty'}, 'ボタンを押すと\n近くの飲食店が表示されます'));
+  }
+  for (const p of state.nearby) {
+    const card = h('div', {cls:'card', style:'border-left-color:var(--teal);margin-bottom:11px'},
+      h('div', {style:'display:flex;justify-content:space-between;align-items:flex-start;gap:10px'},
+        h('div', {style:'flex:1;min-width:0'},
+          h('div', {cls:'card-cat'}, p.category),
+          h('div', {cls:'card-title'}, p.name),
+          p.address ? h('div', {cls:'card-addr'}, '📍 ' + p.address) : null,
+          p.distance ? h('div', {cls:'card-dist'}, '🚶 ' + p.distance + 'm') : null,
+        ),
+        h('button', {
+          cls:'btn btn-primary btn-sm',
+          style:'flex-shrink:0',
+          onClick: () => addFromNearby(p)
+        }, '＋ メモ')
+      )
+    );
+    listEl.append(card);
+  }
+
+  return h('div', {style:'display:flex;flex-direction:column;min-height:100vh'},
+    h('div', {cls:'header'},
+      h('button', {cls:'btn-back', onClick: () => setState({view:'list'})}, '← 戻る'),
+      h('span', {cls:'header-title'}, '📍 近くの飲食店')
+    ),
+    h('div', {cls:'scroll-area', style:'padding:16px'}, loadBtn, listEl)
+  );
+}
+
+// ── INIT ──
+state.memos = loadMemos();
+state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
+render();
+</script>
+</body>
+</html>
