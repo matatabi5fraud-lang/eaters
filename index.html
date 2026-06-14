@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>友メシ — 友達のおすすめレストランメモ</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -208,7 +209,11 @@
 <div id="toast"></div>
 
 <script>
-const STORAGE_KEY = 'tomodachi-meshi-v1';
+// ── SUPABASE INITIALIZATION ──
+const SUPABASE_URL = 'https://qvrkarxkwqjfopbwgavs.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2cmthcnhrd3FqZm9wYndnYXZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzMzODQsImV4cCI6MjA5NzAwOTM4NH0.wkTLeiCJMkQJ8t87osAZwxUUkgZBeTOgudb5WD4Kmg4';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const FRIEND_COLORS = ['#F6C90E','#5DBB63','#17A2B8','#E06C75','#9B59B6','#F07A30'];
 const CATEGORIES = ['🍜 ラーメン・麺類','🍣 寿司・魚','🍖 肉料理','🍕 洋食','🍱 和食','☕ カフェ・スイーツ','🌏 エスニック','🍺 居酒屋','その他'];
 
@@ -228,15 +233,135 @@ let state = {
   nearby: [],
   nearbyLoading: false,
   nearbyError: '',
+  isLoadingData: true
 };
 let sugTimer = null;
 
-// ── STORAGE ──
-function loadMemos() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+// ── SUPABASE DATABASE ACTIONS ──
+async function loadMemos() {
+  state.isLoadingData = true;
+  render();
+  // Supabaseのmemosテーブルから全データを取得 (ID降順で新しい順に)
+  const { data, error } = await supabase.from('memos').select('*').order('id', { ascending: false });
+  
+  if (error) {
+    console.error('Supabase fetch error:', error);
+    toast('データの読み込みに失敗しました');
+  } else if (data) {
+    state.memos = data;
+    state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
+  }
+  state.isLoadingData = false;
+  render();
 }
-function saveMemos(memos) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(memos)); } catch {}
+
+async function addMemo() {
+  const friend = state.form.friendNew.trim() || state.form.friend;
+  if (!state.form.name.trim() || !friend) return;
+  
+  // idはSupabaseが自動で割り振るので送らない
+  const memo = {
+    name: state.form.name.trim(), 
+    friend: friend,
+    category: state.form.category,
+    menu: state.form.menu.trim(),
+    note: state.form.note.trim(),
+    address: state.form.address.trim(),
+    lat: state.form.lat || null, 
+    lng: state.form.lng || null,
+    visited: state.form.visited,
+    createdAt: new Date().toLocaleDateString('ja-JP')
+  };
+
+  toast('保存中...');
+  
+  // Supabaseにデータ追加
+  const { data, error } = await supabase.from('memos').insert([memo]).select();
+  
+  if (error) {
+    console.error('Supabase insert error:', error);
+    toast('保存に失敗しました');
+    return;
+  }
+
+  if (data && data.length > 0) {
+    state.memos = [data[0], ...state.memos];
+    state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
+    state.form = { name:'', friend:'', friendNew:'', category:'その他', menu:'', note:'', address:'', lat:null, lng:null, visited:false };
+    _addFormEl = null;
+    state.view = 'list';
+    toast('📝 保存しました！');
+    render();
+  }
+}
+
+async function toggleVisited(id) {
+  const memo = state.memos.find(m => m.id === id);
+  if (!memo) return;
+  const newStatus = !memo.visited;
+
+  // 画面上は先に切り替える(楽観的UI)
+  state.memos = state.memos.map(m => m.id === id ? { ...m, visited: newStatus } : m);
+  render();
+
+  // Supabaseを更新
+  const { error } = await supabase.from('memos').update({ visited: newStatus }).eq('id', id);
+  if (error) {
+    console.error('Supabase update error:', error);
+    toast('更新に失敗しました');
+    // 失敗したら元に戻す
+    state.memos = state.memos.map(m => m.id === id ? { ...m, visited: memo.visited } : m);
+    render();
+  }
+}
+
+async function deleteMemo(id) {
+  if (!confirm('このメモを削除しますか？')) return;
+
+  toast('削除中...');
+
+  // Supabaseから削除
+  const { error } = await supabase.from('memos').delete().eq('id', id);
+  if (error) {
+    console.error('Supabase delete error:', error);
+    toast('削除に失敗しました');
+    return;
+  }
+
+  state.memos = state.memos.filter(m => m.id !== id);
+  state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
+  state.view = 'list';
+  toast('🗑 削除しました');
+  render();
+}
+
+// ── CSV EXPORT ──
+function exportCSV() {
+  if (state.memos.length === 0) {
+    toast('出力するデータがありません');
+    return;
+  }
+  
+  const headers = ['店名', '友達', 'カテゴリ', 'メニュー', 'メモ', '住所', '行ったか', '登録日'];
+  const rows = state.memos.map(m => [
+    `"${(m.name || '').replace(/"/g, '""')}"`,
+    `"${(m.friend || '').replace(/"/g, '""')}"`,
+    `"${(m.category || '').replace(/"/g, '""')}"`,
+    `"${(m.menu || '').replace(/"/g, '""')}"`,
+    `"${(m.note || '').replace(/"/g, '""')}"`,
+    `"${(m.address || '').replace(/"/g, '""')}"`,
+    m.visited ? 'はい' : 'いいえ',
+    m.createdAt
+  ]);
+  
+  const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'tomodachi-meshi_data.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 // ── HELPERS ──
@@ -257,12 +382,10 @@ function toast(msg) {
   setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-// ── OpenStreetMap API (キー不要) ──
+// ── OpenStreetMap API ──
 async function apiSearch(query) {
   const p = new URLSearchParams({ q: query, format: 'json', addressdetails: 1, limit: 8, countrycodes: 'jp' });
-  const res = await fetch(`https://nominatim.openstreetmap.org/search?${p}`, {
-    headers: { 'Accept-Language': 'ja' }
-  });
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?${p}`, { headers: { 'Accept-Language': 'ja' } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
   return data.map(p => ({
@@ -277,15 +400,10 @@ async function apiSearch(query) {
 async function apiNearby(ll) {
   const [lat, lon] = ll.split(',');
   const query = `[out:json][timeout:10];(node["amenity"~"restaurant|cafe|fast_food|bar|pub|bbq"](around:800,${lat},${lon}););out 20;`;
-  const res = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    body: query
-  });
+  const res = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: query });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
-  return (data.elements || [])
-    .filter(p => p.tags && p.tags.name)
-    .map(p => ({
+  return (data.elements || []).filter(p => p.tags && p.tags.name).map(p => ({
       name: p.tags.name,
       address: '周辺の店舗',
       lat: p.lat,
@@ -358,46 +476,6 @@ function pickSuggestion(s) {
     _addFormEl._refs.nameInput.value = s.name;
     patchAddForm();
   } else render();
-}
-
-function addMemo() {
-  const friend = state.form.friendNew.trim() || state.form.friend;
-  if (!state.form.name.trim() || !friend) return;
-  const memo = {
-    id: Date.now(),
-    name: state.form.name.trim(), friend,
-    category: state.form.category,
-    menu: state.form.menu.trim(),
-    note: state.form.note.trim(),
-    address: state.form.address.trim(),
-    lat: state.form.lat, lng: state.form.lng,
-    visited: state.form.visited,
-    createdAt: new Date().toLocaleDateString('ja-JP'),
-  };
-  state.memos = [memo, ...state.memos];
-  saveMemos(state.memos);
-  state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
-  state.form = { name:'', friend:'', friendNew:'', category:'その他', menu:'', note:'', address:'', lat:null, lng:null, visited:false };
-  _addFormEl = null;
-  state.view = 'list';
-  toast('📝 保存しました');
-  render();
-}
-
-function toggleVisited(id) {
-  state.memos = state.memos.map(m => m.id === id ? { ...m, visited: !m.visited } : m);
-  saveMemos(state.memos);
-  render();
-}
-
-function deleteMemo(id) {
-  if (!confirm('このメモを削除しますか？')) return;
-  state.memos = state.memos.filter(m => m.id !== id);
-  saveMemos(state.memos);
-  state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
-  state.view = 'list';
-  toast('🗑 削除しました');
-  render();
 }
 
 async function loadNearby() {
@@ -482,6 +560,7 @@ function renderList() {
       h('div', {cls:'header-sub'}, `まだ行ってない：${noyet}件`)
     ),
     h('div', {cls:'header-actions'},
+      h('button', {cls:'btn btn-gray btn-sm', onClick: exportCSV}, '📄 CSV'),
       h('button', {cls:'btn btn-teal btn-sm', onClick: () => { setState({view:'nearby'}); }}, '📍 近く'),
       h('button', {cls:'btn btn-primary btn-sm', onClick: () => { setState({view:'add'}); }}, '＋ 追加')
     )
@@ -521,7 +600,10 @@ function renderList() {
   );
 
   const listEl = h('div', {cls:'list scroll-area'});
-  if (memos.length === 0) {
+  
+  if (state.isLoadingData) {
+    listEl.append(h('div', {cls:'empty'}, '☁️ データを読み込み中...'));
+  } else if (memos.length === 0) {
     listEl.append(h('div', {cls:'empty'}, state.memos.length === 0
       ? '＋ ボタンで\n友達のおすすめを追加しよう！'
       : '該当するメモがありません'));
@@ -563,19 +645,16 @@ function buildAddForm() {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex;flex-direction:column;min-height:100vh';
 
-  // header
   const header = h('div', {cls:'header'},
     h('button', {cls:'btn-back', onClick: () => { _addFormEl = null; setState({view:'list'}); }}, '← 戻る'),
     h('span', {cls:'header-title'}, '新しいメモ')
   );
   wrap.append(header);
 
-  // form body
   const body = document.createElement('div');
   body.className = 'form-body scroll-area';
   wrap.append(body);
 
-  // 店名
   body.append(lbl('お店の名前 *'));
   const sugWrap = document.createElement('div');
   sugWrap.className = 'sug-wrap';
@@ -592,15 +671,12 @@ function buildAddForm() {
   sugWrap.append(sugBox);
   body.append(sugWrap);
 
-  // ステータス行
   const statusEl = document.createElement('div');
   body.append(statusEl);
 
-  // 住所確認
   const addrEl = document.createElement('div');
   body.append(addrEl);
 
-  // 友達
   body.append(lbl('教えてくれた友達 *'));
   const chipRow = document.createElement('div');
   chipRow.className = 'chip-row';
@@ -615,7 +691,6 @@ function buildAddForm() {
   });
   body.append(friendInput);
 
-  // カテゴリ
   body.append(lbl('カテゴリ'));
   const catSel = document.createElement('select');
   catSel.className = 'form-input';
@@ -624,7 +699,6 @@ function buildAddForm() {
   catSel.addEventListener('change', e => { state.form = {...state.form, category: e.target.value}; });
   body.append(catSel);
 
-  // メニュー
   body.append(lbl('おすすめメニュー'));
   const menuInput = document.createElement('input');
   menuInput.className = 'form-input';
@@ -633,7 +707,6 @@ function buildAddForm() {
   menuInput.addEventListener('input', e => { state.form = {...state.form, menu: e.target.value}; });
   body.append(menuInput);
 
-  // メモ
   body.append(lbl('メモ・コメント'));
   const noteTA = document.createElement('textarea');
   noteTA.className = 'form-textarea';
@@ -642,7 +715,6 @@ function buildAddForm() {
   noteTA.addEventListener('input', e => { state.form = {...state.form, note: e.target.value}; });
   body.append(noteTA);
 
-  // 行った
   const visitedLabel = document.createElement('label');
   visitedLabel.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;color:#555;cursor:pointer';
   const visitedCb = document.createElement('input');
@@ -652,7 +724,6 @@ function buildAddForm() {
   visitedLabel.append(visitedCb, 'もう行った');
   body.append(visitedLabel);
 
-  // 保存ボタン
   const saveBtn = document.createElement('button');
   saveBtn.className = 'btn btn-primary btn-full';
   saveBtn.style.marginTop = '20px';
@@ -664,7 +735,7 @@ function buildAddForm() {
     state.form.friendNew = friendInput.value;
     state.form.category  = catSel.value;
     state.form.visited   = visitedCb.checked;
-    addMemo();
+    addMemo(); // Supabaseへ送信
   });
   body.append(saveBtn);
 
@@ -677,7 +748,6 @@ function patchAddForm() {
   const { nameInput, sugBox, statusEl, addrEl, chipRow, saveBtn } = _addFormEl._refs;
   const f = state.form;
 
-  // 候補ドロップダウン更新
   sugBox.innerHTML = '';
   if (state.showSug && state.suggestions.length > 0) {
     sugBox.className = 'sug-box';
@@ -693,7 +763,6 @@ function patchAddForm() {
     sugBox.className = '';
   }
 
-  // ステータス
   if (state.apiError) {
     statusEl.className = 'err-box'; statusEl.textContent = state.apiError;
   } else if (state.apiStatus) {
@@ -702,14 +771,12 @@ function patchAddForm() {
     statusEl.className = ''; statusEl.textContent = '';
   }
 
-  // 住所
   if (f.address) {
     addrEl.className = 'addr-confirm'; addrEl.textContent = '✅ 住所自動入力済み：' + f.address;
   } else {
     addrEl.className = 'api-status'; addrEl.textContent = '候補を選ぶと住所が自動で入ります';
   }
 
-  // 友達チップ
   chipRow.innerHTML = '';
   state.friends.forEach(fr => {
     const btn = document.createElement('button');
@@ -723,7 +790,6 @@ function patchAddForm() {
     chipRow.append(btn);
   });
 
-  // 保存ボタン活性
   const friend = f.friendNew.trim() || f.friend;
   const canSave = f.name.trim() && friend;
   saveBtn.style.opacity = canSave ? '1' : '0.4';
@@ -847,9 +913,8 @@ function renderNearby() {
 }
 
 // ── INIT ──
-state.memos = loadMemos();
-state.friends = [...new Set(state.memos.map(m => m.friend).filter(Boolean))];
-render();
+// ページを開いた瞬間にSupabaseからデータを取得する
+loadMemos();
 </script>
 </body>
 </html>
