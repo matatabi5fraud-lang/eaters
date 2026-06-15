@@ -283,7 +283,7 @@ window.handleUnlock = function() {
   if (input.value.trim() === SECRET_WORD) {
     try { sessionStorage.setItem('tomomeshi-unlocked', 'true'); } catch(e) {}
     lock.style.display = 'none';
-    loadMemos(); // 解除後にデータ読み込み
+    loadMemos(); 
   } else {
     err.style.display = 'block';
     input.value = '';
@@ -324,16 +324,15 @@ async function addMemo() {
   let finalLng = state.form.lng;
   let finalAddr = state.form.address.trim();
 
-  // ★ 手動入力で位置情報がない場合、「大体の場所」を探り当てるフォールバック検索機能
   if (!finalLat || !finalLng) {
     try {
       const queriesToTry = [];
       if (finalAddr) {
-        queriesToTry.push(finalAddr); // そのままの住所
-        queriesToTry.push(finalAddr.split(/[\s　]+/)[0]); // スペースより前の部分（ビル名をカット）
-        queriesToTry.push(finalAddr.replace(/[0-9０-９\-\－ーFＦ階室号].*$/, '')); // 数字より前の部分（大まかな町名レベル）
+        queriesToTry.push(finalAddr); 
+        queriesToTry.push(finalAddr.split(/[\s　]+/)[0]); 
+        queriesToTry.push(finalAddr.replace(/[0-9０-９\-\－ーFＦ階室号].*$/, '')); 
       }
-      if (state.form.name.trim()) queriesToTry.push(state.form.name.trim()); // 店名も試す
+      if (state.form.name.trim()) queriesToTry.push(state.form.name.trim()); 
 
       for (let q of queriesToTry) {
         if (!q || q.length < 2) continue;
@@ -497,7 +496,6 @@ function filteredMemos() {
     return true; 
   }); 
 
-  // ★「近い順ソート」の処理
   if (state.filter.sort === 'near' && state.userLL) {
     const [uLat, uLng] = state.userLL.split(',').map(Number);
     results.forEach(m => {
@@ -573,42 +571,20 @@ function renderMap() {
   return wrap;
 }
 
-// LIST
-function renderList() {
-  const memos = filteredMemos(); const noyet = state.memos.filter(m => !m.visited).length;
-  const header = h('div', {cls:'header'}, 
-    h('div', {}, h('div', {cls:'header-title'}, '🍽 友メシ'), h('div', {cls:'header-sub'}, `まだ行ってない：${noyet}件`)), 
-    h('div', {cls:'header-actions'}, 
-      // ★ CSVボタンを削除し、「近く」ボタンを復活させました
-      h('button', {cls:'btn btn-teal btn-sm', onClick: () => { setState({view:'nearby'}); }}, '📍 近く'),
-      h('button', {cls:'btn btn-teal btn-sm', onClick: () => { setState({view:'map'}); }}, '🗺 マップ'),
-      h('button', {cls:'btn btn-primary btn-sm', onClick: () => { setState({view:'add'}); }}, '＋ 追加')
-    )
-  );
-  
-  const searchEl = h('input', { cls:'search-input', placeholder:'🔍 店名・友達・住所...', value: state.filter.search, onInput: e => { state.filter.search = e.target.value; render(); } });
-  const friendSel = h('select', { cls:'filter-select', onChange: e => { state.filter.friend = e.target.value; render(); } }, h('option', {value:''}, '全員'), ...state.friends.map(fr => { const opt = h('option', {value:fr}, fr); if (state.filter.friend === fr) opt.selected = true; return opt; }));
-  const visitedSel = h('select', { cls:'filter-select', onChange: e => { state.filter.visited = e.target.value; render(); } }, ...[['all','全部'],['notyet','未訪問'],['visited','行った']].map(([v,l]) => { const opt = h('option', {value:v}, l); if (state.filter.visited === v) opt.selected = true; return opt; }));
-  
-  const sortSel = h('select', { cls:'filter-select', onChange: async e => { 
-    const val = e.target.value;
-    if (val === 'near') {
-      if (!state.userLL) {
-        toast('現在地を取得しています...');
-        try { await getLocation(); } catch(err) { toast(err); e.target.value = 'new'; return; }
-      }
-    }
-    state.filter.sort = val;
-    render();
-  }}, 
-    h('option', {value:'new'}, '新しい順'),
-    h('option', {value:'near', selected: state.filter.sort === 'near'}, '現在地から近い順')
-  );
+// ── ★ リスト部分だけを更新する関数（入力フォーカスが外れないようにするため） ──
+function updateMemoListDOM() {
+  const listEl = document.getElementById('memo-list-container');
+  if (listEl) buildListItems(listEl);
+}
 
-  const filters = h('div', {cls:'filter-bar'}, searchEl, h('div', {cls:'filter-row'}, friendSel, visitedSel, sortSel));
-  const listEl = h('div', {cls:'list scroll-area'});
-  
-  if (state.isLoadingData) { listEl.append(h('div', {cls:'empty'}, '☁️ データを読み込み中...')); } else if (memos.length === 0) { listEl.append(h('div', {cls:'empty'}, state.memos.length === 0 ? '＋ ボタンで\n友達のおすすめを追加しよう！' : '該当するメモがありません')); } else {
+function buildListItems(listEl) {
+  listEl.innerHTML = '';
+  const memos = filteredMemos();
+  if (state.isLoadingData) { 
+    listEl.append(h('div', {cls:'empty'}, '☁️ データを読み込み中...')); 
+  } else if (memos.length === 0) { 
+    listEl.append(h('div', {cls:'empty'}, state.memos.length === 0 ? '＋ ボタンで\n友達のおすすめを追加しよう！' : '該当するメモがありません')); 
+  } else {
     for (const m of memos) {
       const color = getFriendColor(m.friend, state.friends);
       
@@ -631,6 +607,48 @@ function renderList() {
         h('div', {cls:'card-row'}, h('span', {cls:'friend-tag', style:`background:${color}`}, '👤 ' + m.friend), m.address ? h('span', {style:'font-size:11px;color:var(--teal)'}, '🗺 地図あり') : null)));
     }
   }
+}
+
+// LIST (メイン画面の描画)
+function renderList() {
+  const noyet = state.memos.filter(m => !m.visited).length;
+  const header = h('div', {cls:'header'}, 
+    h('div', {}, h('div', {cls:'header-title'}, '🍽 友メシ'), h('div', {cls:'header-sub'}, `まだ行ってない：${noyet}件`)), 
+    h('div', {cls:'header-actions'}, 
+      h('button', {cls:'btn btn-teal btn-sm', onClick: () => { setState({view:'nearby'}); }}, '📍 近く'),
+      h('button', {cls:'btn btn-teal btn-sm', onClick: () => { setState({view:'map'}); }}, '🗺 マップ'),
+      h('button', {cls:'btn btn-primary btn-sm', onClick: () => { setState({view:'add'}); }}, '＋ 追加')
+    )
+  );
+  
+  // ★ ここが一番のポイント！ onInput で render() ではなく updateMemoListDOM() だけを呼ぶように変更しました
+  const searchEl = h('input', { cls:'search-input', placeholder:'🔍 店名・友達・住所...', value: state.filter.search, onInput: e => { state.filter.search = e.target.value; updateMemoListDOM(); } });
+  const friendSel = h('select', { cls:'filter-select', onChange: e => { state.filter.friend = e.target.value; updateMemoListDOM(); } }, h('option', {value:''}, '全員'), ...state.friends.map(fr => { const opt = h('option', {value:fr}, fr); if (state.filter.friend === fr) opt.selected = true; return opt; }));
+  const visitedSel = h('select', { cls:'filter-select', onChange: e => { state.filter.visited = e.target.value; updateMemoListDOM(); } }, ...[['all','全部'],['notyet','未訪問'],['visited','行った']].map(([v,l]) => { const opt = h('option', {value:v}, l); if (state.filter.visited === v) opt.selected = true; return opt; }));
+  
+  const sortSel = h('select', { cls:'filter-select', onChange: async e => { 
+    const val = e.target.value;
+    if (val === 'near') {
+      if (!state.userLL) {
+        toast('現在地を取得しています...');
+        try { await getLocation(); } catch(err) { toast(err); e.target.value = 'new'; return; }
+      }
+    }
+    state.filter.sort = val;
+    updateMemoListDOM();
+  }}, 
+    h('option', {value:'new'}, '新しい順'),
+    h('option', {value:'near', selected: state.filter.sort === 'near'}, '現在地から近い順')
+  );
+
+  const filters = h('div', {cls:'filter-bar'}, searchEl, h('div', {cls:'filter-row'}, friendSel, visitedSel, sortSel));
+  
+  // リストの中身の入れ物だけ作っておく
+  const listEl = h('div', {cls:'list scroll-area', id:'memo-list-container'});
+  
+  // 中身を構築
+  buildListItems(listEl);
+  
   return h('div', {style:'display:flex;flex-direction:column;min-height:100vh'}, header, filters, listEl);
 }
 
