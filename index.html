@@ -162,7 +162,7 @@
   .list { padding: 13px 16px; display: flex; flex-direction: column; gap: 11px; }
   .card-title { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card-sub   { font-size: 12px; color: #666; margin-top: 3px; }
-  .card-addr  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .card-addr  { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; } /* 少し行間を広げました */
   .card-row   { display: flex; justify-content: space-between; align-items: center; margin-top: 9px; }
   .card-cat   { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
   .card-dist  { font-size: 12px; color: var(--teal); font-weight: bold; margin-top: 4px; }
@@ -175,7 +175,7 @@
   .detail-name { font-size: 22px; font-weight: 700; margin-top: 3px; }
   .detail-section { margin-top: 15px; }
   .detail-label { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
-  .detail-value { font-size: 15px; }
+  .detail-value { font-size: 15px; line-height: 1.5; }
   .detail-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 
   /* MAP */
@@ -217,8 +217,6 @@
 </style>
 </head>
 <body>
-
-<div style="position: fixed; top: 4px; left: 4px; font-size: 12px; font-weight: bold; color: #fff; z-index: 20000; background: #E06C75; padding: 2px 6px; border-radius: 4px; pointer-events: none;">v10</div>
 
 <div id="lock-screen">
   <div class="lock-card">
@@ -326,20 +324,31 @@ async function addMemo() {
   let finalLng = state.form.lng;
   let finalAddr = state.form.address.trim();
 
-  // ★ 手動入力で位置情報（lat/lng）がない場合、裏側で自動検索して補完する最強機能
+  // ★ 手動入力で位置情報がない場合、「大体の場所」を探り当てるフォールバック検索機能
   if (!finalLat || !finalLng) {
     try {
-      const query = finalAddr || state.form.name.trim();
-      const results = await apiSearch(query);
-      if (results && results.length > 0) {
-        finalLat = results[0].lat;
-        finalLng = results[0].lng;
-        if (!finalAddr) finalAddr = results[0].address; // 住所が空っぽなら埋める
+      const queriesToTry = [];
+      if (finalAddr) {
+        queriesToTry.push(finalAddr); // そのままの住所
+        queriesToTry.push(finalAddr.split(/[\s　]+/)[0]); // スペースより前の部分（ビル名をカット）
+        queriesToTry.push(finalAddr.replace(/[0-9０-９\-\－ーFＦ階室号].*$/, '')); // 数字より前の部分（大まかな町名レベル）
+      }
+      if (state.form.name.trim()) queriesToTry.push(state.form.name.trim()); // 店名も試す
+
+      for (let q of queriesToTry) {
+        if (!q || q.length < 2) continue;
+        const results = await apiSearch(q);
+        if (results && results.length > 0) {
+          finalLat = results[0].lat;
+          finalLng = results[0].lng;
+          // 住所はユーザーが入力した細かい情報をそのまま保持したいので上書きしない
+          if (!finalAddr) finalAddr = results[0].address;
+          break; // 見つかったらループ終了してピンを確保
+        }
       }
     } catch(e) { console.log('位置情報補完エラー', e); }
   }
 
-  // ★ Supabaseの float8 に弾かれないよう、強制的にNumber型に変換して保存
   const memo = {
     name: state.form.name.trim(), friend: friend, category: state.form.category,
     menu: state.form.menu.trim(), note: state.form.note.trim(), address: finalAddr,
@@ -505,16 +514,14 @@ function filteredMemos() {
     return true; 
   }); 
 
-  // ★「近い順ソート」の処理（強制的にNumber変換して計算）
+  // ★「近い順ソート」の処理
   if (state.filter.sort === 'near' && state.userLL) {
     const [uLat, uLng] = state.userLL.split(',').map(Number);
     results.forEach(m => {
       m._dist = getDistance(uLat, uLng, Number(m.lat), Number(m.lng));
     });
-    // 距離が計算できない（Infinity）のものは下へ
     results.sort((a, b) => a._dist - b._dist);
   } else {
-    // 新しい順（標準）の場合はリセット
     results.forEach(m => m._dist = null);
   }
 
@@ -530,7 +537,7 @@ function render() {
   if (state.view === 'nearby') { app.append(renderNearby()); return; }
   if (state.view === 'add')    { app.append(renderAdd());    return; }
   if (state.view === 'detail') { app.append(renderDetail()); return; }
-  if (state.view === 'map')    { app.append(renderMap());    return; } // ★マップビューへの切り替え
+  if (state.view === 'map')    { app.append(renderMap());    return; }
   app.append(renderList());
 }
 
@@ -545,19 +552,15 @@ function renderMap() {
     )
   );
 
-  // マップを描画するための空の枠
   const mapDiv = h('div', {id:'map-container', style:'flex:1;width:100%;z-index:1;'});
   wrap.append(header, mapDiv);
 
-  // HTMLのDOMに挿入された直後にLeafletを初期化する
   setTimeout(() => {
-    // Leafletが読み込まれていなければエラーを防ぐ
     if (typeof L === 'undefined') {
       mapDiv.innerHTML = '<div class="empty">地図の読み込みに失敗しました</div>';
       return;
     }
 
-    // 地図の初期化（一旦東京を中心にする）
     const map = L.map('map-container').setView([35.681236, 139.767125], 10);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
@@ -565,10 +568,8 @@ function renderMap() {
 
     const bounds = [];
     state.memos.forEach(m => {
-      // 緯度経度があるメモだけピンを立てる（強制Number化）
       if (m.lat && m.lng) {
         const marker = L.marker([Number(m.lat), Number(m.lng)]).addTo(map);
-        // ピンをタップした時の吹き出し（Popup）
         marker.bindPopup(`
           <div style="font-weight:bold;font-size:14px;margin-bottom:4px;">${m.name}</div>
           <div style="font-size:11px;color:#666;margin-bottom:8px;">${m.category}</div>
@@ -578,11 +579,9 @@ function renderMap() {
       }
     });
 
-    // ピンが1つ以上あれば、すべてのピンが画面に収まるようにズームを自動調整
     if (bounds.length > 0) {
       map.fitBounds(bounds, {padding: [30, 30]});
     } else if (state.userLL) {
-      // ピンがないけど現在地がわかっている場合は現在地へ
       const [lat, lng] = state.userLL.split(',');
       map.setView([Number(lat), Number(lng)], 13);
     }
@@ -607,7 +606,6 @@ function renderList() {
   const friendSel = h('select', { cls:'filter-select', onChange: e => { state.filter.friend = e.target.value; render(); } }, h('option', {value:''}, '全員'), ...state.friends.map(fr => { const opt = h('option', {value:fr}, fr); if (state.filter.friend === fr) opt.selected = true; return opt; }));
   const visitedSel = h('select', { cls:'filter-select', onChange: e => { state.filter.visited = e.target.value; render(); } }, ...[['all','全部'],['notyet','未訪問'],['visited','行った']].map(([v,l]) => { const opt = h('option', {value:v}, l); if (state.filter.visited === v) opt.selected = true; return opt; }));
   
-  // ★ ソート順のセレクトボックス
   const sortSel = h('select', { cls:'filter-select', onChange: async e => { 
     const val = e.target.value;
     if (val === 'near') {
@@ -630,7 +628,6 @@ function renderList() {
     for (const m of memos) {
       const color = getFriendColor(m.friend, state.friends);
       
-      // ★距離が計算されていれば表示用のテキストを作成
       let distText = null;
       if (m._dist && m._dist !== Infinity) {
         distText = h('div', {cls:'card-dist'}, `🚶 約 ${Math.round(m._dist)} m`);
@@ -643,7 +640,7 @@ function renderList() {
             h('div', {cls:'card-title'}, m.name), 
             m.menu ? h('div', {cls:'card-sub'}, '🍽 ' + m.menu) : null, 
             m.address ? h('div', {cls:'card-addr'}, '📍 ' + m.address) : null,
-            distText // ★距離を表示
+            distText
           ), 
           h('span', {cls:'badge', style:`background:${m.visited?'#5DBB63':'#bbb'};margin-left:8px;flex-shrink:0`}, m.visited ? '行った✓' : '未訪問')
         ), 
@@ -663,7 +660,6 @@ function buildAddForm() {
   const sugWrap = document.createElement('div'); sugWrap.className = 'sug-wrap'; const nameInput = document.createElement('input'); nameInput.className = 'form-input'; nameInput.placeholder = '2文字以上入力すると候補が出ます'; nameInput.autocomplete = 'off'; nameInput.value = state.form.name; nameInput.addEventListener('input', e => handleNameInput(e.target.value)); nameInput.addEventListener('focus', () => { if (state.suggestions.length > 0) patchAddForm(); }); nameInput.addEventListener('blur', () => setTimeout(() => { state.showSug = false; patchAddForm(); }, 200)); sugWrap.append(nameInput); const sugBox = document.createElement('div'); sugWrap.append(sugBox); body.append(sugWrap);
   const statusEl = document.createElement('div'); body.append(statusEl); 
   
-  // ★手動入力用の住所フィールド
   body.append(lbl('住所'));
   const addrInput = document.createElement('input'); addrInput.className = 'form-input'; addrInput.placeholder = '住所（自動入力、または手動で入力）'; addrInput.value = state.form.address; addrInput.addEventListener('input', e => { state.form.address = e.target.value; }); body.append(addrInput);
   
@@ -680,14 +676,10 @@ function patchAddForm() {
   if (!_addFormEl) return; const { nameInput, sugBox, statusEl, addrInput, chipRow, saveBtn } = _addFormEl._refs; const f = state.form;
   sugBox.innerHTML = ''; if (state.showSug && state.suggestions.length > 0) { sugBox.className = 'sug-box'; state.suggestions.forEach(s => { sugBox.append(h('div', {cls:'sug-item', onMousedown: () => pickSuggestion(s)}, h('div', {cls:'sug-name'}, s.name), s.address ? h('div', {cls:'sug-addr'}, s.address) : null, s.category ? h('div', {cls:'sug-cat'}, s.category) : null)); }); } else { sugBox.className = ''; }
   if (state.apiError) { statusEl.className = 'err-box'; statusEl.textContent = state.apiError; } else if (state.apiStatus) { statusEl.className = 'api-status'; statusEl.textContent = '🔍 ' + state.apiStatus; } else { statusEl.className = ''; statusEl.textContent = ''; }
-  
-  // 入力中でない時だけ自動で住所をセットする
   if (addrInput && document.activeElement !== addrInput) { addrInput.value = f.address || ''; }
-
   chipRow.innerHTML = ''; state.friends.forEach(fr => { const btn = document.createElement('button'); btn.className = 'chip' + (f.friend === fr && !f.friendNew ? ' active' : ''); btn.textContent = fr; btn.addEventListener('click', () => { state.form = {...state.form, friend: fr, friendNew: ''}; _addFormEl._refs.friendInput.value = ''; patchAddForm(); }); chipRow.append(btn); });
   const canSave = f.name.trim() && (f.friendNew.trim() || f.friend); saveBtn.style.opacity = canSave ? '1' : '0.4';
 }
-
 function renderAdd() { if (!_addFormEl) _addFormEl = buildAddForm(); patchAddForm(); return _addFormEl; }
 function lbl(text) { const el = document.createElement('label'); el.className = 'form-label'; el.textContent = text; return el; }
 
